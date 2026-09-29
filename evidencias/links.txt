@@ -1,0 +1,2 @@
+https://github.com/youserz/devopsPratica
+https://github.com/youserz/devopsPratica/pkgs/container/devopspratica
