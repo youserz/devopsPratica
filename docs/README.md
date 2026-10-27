@@ -34,11 +34,12 @@ Artifacts: `gitleaks`, `cobertura`, `trivy-dependencias`, `trivy-imagem`, `sbom-
 
 ## Demonstração
 
-As evidências reais e links de execuções serão registrados em `docs/evidencias.md`.
+As evidências reais e links de execuções estão em [evidencias.md](evidencias.md).
 O PR #2 da branch `demonstracao-cve` introduziu urllib3 1.26.4 no arquivo de
 dependências de desenvolvimento para demonstrar o bloqueio. CVE-2021-33503 possui correção em 1.26.5.
-Depois de registrar o relatório e o merge bloqueado, restaurar a versão fixada
-atual no mesmo PR e guardar os checks aprovados. Não integrar a versão vulnerável.
+O relatório e o merge bloqueado foram capturados. A versão foi corrigida para
+2.8.0 no mesmo PR, e todos os checks passaram na execução posterior.
+A versão vulnerável não foi publicada no GHCR nem integrada como estado da main.
 
 ## Executar os testes localmente
 

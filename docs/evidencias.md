@@ -87,4 +87,16 @@ O scanner aguarda o Quality Gate e retorna falha se ele reprovar.
 ## Aprovação após corrigir a dependência
 
 A versão vulnerável foi restaurada para `urllib3==2.8.0` no mesmo PR.
-O link e a captura da execução corrigida serão registrados após sua conclusão.
+- Commit corrigido: `57d0902`.
+- [Execução aprovada após correção](https://github.com/youserz/devopsPratica/actions/runs/40596202621).
+- [Trivy dependências aprovado](https://github.com/youserz/devopsPratica/actions/runs/40596202621/job/122512621822).
+- [SBOM e relatórios da versão corrigida](https://github.com/youserz/devopsPratica/actions/runs/40596202621#artifacts).
+
+Todos os seis checks obrigatórios passaram. O job de publicação foi ignorado por
+ser um PR, conforme a regra de publicação exclusiva de pushes na main.
+
+![Execução aprovada após corrigir urllib3](../evidencias/devsecops/correcao-aprovada.png)
+
+![Artifacts da execução corrigida](../evidencias/devsecops/artifacts-corrigidos.png)
+
+![Checks obrigatórios na proteção da main](../evidencias/devsecops/protecao-main.png)
