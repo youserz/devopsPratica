@@ -10,7 +10,10 @@ O workflow `.github/workflows/ci.yml` executa em PRs para `main` e pushes na `ma
 | Trivy (dependências e imagem) | HIGH/CRITICAL com correção disponível |
 | Syft | Falha ao gerar ou guardar o SBOM SPDX JSON |
 
-Trivy produz relatórios de todas as severidades antes do gate. LOW/MEDIUM e achados
+Trivy produz relatórios de todas as severidades antes do gate. Os manifests de
+execução e desenvolvimento são preparados em diretórios separados com o nome
+`requirements.txt`, reconhecido pelo scanner. Isso inclui as dependências transitivas
+fixadas e evita deixar `requirements-dev.txt` fora da análise. LOW/MEDIUM e achados
 sem correção permanecem nos artifacts, mas não bloqueiam. Os relatórios são enviados
 mesmo se o gate falhar. O Gitleaks oculta os valores dos segredos nos relatórios.
 
@@ -31,8 +34,20 @@ Artifacts: `gitleaks`, `cobertura`, `trivy-dependencias`, `trivy-imagem`, `sbom-
 
 ## Demonstração
 
-As evidências reais e links de execuções serão registrados em `docs/evidencias.md`.
-A branch de demonstração deve trocar urllib3 pela versão 1.26.4 no arquivo de
-dependências de desenvolvimento. CVE-2021-33503 possui correção em 1.26.5.
-Depois de registrar o relatório e o merge bloqueado, restaurar a versão fixada
-atual no mesmo PR e guardar os checks aprovados. Não integrar a versão vulnerável.
+As evidências reais e links de execuções estão em [evidencias.md](evidencias.md).
+O PR #2 da branch `demonstracao-cve` introduziu urllib3 1.26.4 no arquivo de
+dependências de desenvolvimento para demonstrar o bloqueio. CVE-2021-33503 possui correção em 1.26.5.
+O relatório e o merge bloqueado foram capturados. A versão foi corrigida para
+2.8.0 no mesmo PR, e todos os checks passaram na execução posterior.
+A versão vulnerável não foi publicada no GHCR nem integrada como estado da main.
+
+## Executar os testes localmente
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/ruff check app tests
+.venv/bin/pytest --cov=app --cov-report=xml
+```
+
+As capturas e os links reais estão em [evidencias.md](evidencias.md).
