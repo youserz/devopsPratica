@@ -38,12 +38,18 @@ jobs:
     steps:
     - &id001
       uses: actions/checkout@v4
+    - name: Preparar manifests de execução e desenvolvimento para o Trivy
+      run: |
+        mkdir -p .security-scan/runtime .security-scan/development
+        cp requirements.txt .security-scan/runtime/requirements.txt
+        cat requirements.txt > .security-scan/development/requirements.txt
+        sed '/^-r /d' requirements-dev.txt >> .security-scan/development/requirements.txt
     - name: Relatório de todas as severidades
       uses: aquasecurity/trivy-action@8f28faec26515256b6d22074d1d2a8986f4cbd87
       with:
         scanners: vuln
         scan-type: fs
-        scan-ref: .
+        scan-ref: .security-scan
         skip-dirs: .env,.venv
         format: json
         output: trivy-dependencias.json
@@ -55,7 +61,7 @@ jobs:
       with:
         scanners: vuln
         scan-type: fs
-        scan-ref: .
+        scan-ref: .security-scan
         skip-dirs: .env,.venv
         format: table
         severity: HIGH,CRITICAL
