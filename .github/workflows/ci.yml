@@ -1,42 +1,205 @@
-name: Docker CI/CD
-
-on:
+name: DevSecOps
+'on':
+  pull_request:
+    branches:
+    - main
   push:
     branches:
-      - main
-
+    - main
+  workflow_dispatch: null
+permissions:
+  contents: read
+concurrency:
+  group: devsecops-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: youserz/devopspratica
-
+  IMAGE: ghcr.io/youserz/devopspratica
 jobs:
-  build-and-push:
+  segredos:
+    name: Gitleaks
     runs-on: ubuntu-latest
-
+    steps:
+    - &id002
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Analisar histórico completo com relatório ocultando segredos
+      run: docker run --rm -v "$PWD:/repo" -w /repo zricethezav/gitleaks:v8.24.3 git /repo --log-opts="--all" --redact
+        --exit-code=1 --report-format=json --report-path=/repo/gitleaks.json
+    - uses: actions/upload-artifact@v4
+      with:
+        name: gitleaks
+        path: gitleaks.json
+        if-no-files-found: error
+      if: always()
+  dependencias:
+    name: Trivy dependencias
+    runs-on: ubuntu-latest
+    steps:
+    - &id001
+      uses: actions/checkout@v4
+    - name: Relatório de todas as severidades
+      uses: aquasecurity/trivy-action@8f28faec26515256b6d22074d1d2a8986f4cbd87
+      with:
+        scanners: vuln
+        scan-type: fs
+        scan-ref: .
+        skip-dirs: .env,.venv
+        format: json
+        output: trivy-dependencias.json
+        severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+        ignore-unfixed: false
+        exit-code: '0'
+    - name: Bloquear HIGH/CRITICAL com correção disponível
+      uses: aquasecurity/trivy-action@8f28faec26515256b6d22074d1d2a8986f4cbd87
+      with:
+        scanners: vuln
+        scan-type: fs
+        scan-ref: .
+        skip-dirs: .env,.venv
+        format: table
+        severity: HIGH,CRITICAL
+        ignore-unfixed: true
+        exit-code: '1'
+    - uses: actions/upload-artifact@v4
+      with:
+        name: trivy-dependencias
+        path: trivy-dependencias.json
+        if-no-files-found: error
+      if: always()
+  testes:
+    name: Testes e lint
+    runs-on: ubuntu-latest
+    steps:
+    - *id001
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: pip
+    - run: python -m pip install -r requirements-dev.txt
+    - run: ruff check app tests
+    - run: pytest --cov=app --cov-report=xml --cov-report=term
+    - uses: actions/upload-artifact@v4
+      with:
+        name: cobertura
+        path: coverage.xml
+        if-no-files-found: error
+  sonar:
+    name: SonarCloud Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+    - *id002
+    - uses: actions/download-artifact@v4
+      with:
+        name: cobertura
+        path: .
+    - name: Analisar e aguardar o Quality Gate
+      uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    needs:
+    - testes
+  imagem:
+    name: Construir e testar imagem
+    runs-on: ubuntu-latest
+    steps:
+    - *id001
+    - name: Construir
+      run: docker build --pull -t "$IMAGE:sha-$GITHUB_SHA" .
+    - name: Testar endpoint no container
+      run: |
+        docker run -d --name smoke "$IMAGE:sha-$GITHUB_SHA"
+        trap 'docker logs smoke; docker rm -f smoke' EXIT
+        for _ in $(seq 1 30); do
+          if docker exec smoke python -c 'import json, urllib.request; response=urllib.request.urlopen("http://127.0.0.1:8000/hello"); assert response.status == 200; assert json.load(response) == "Hello World 2"'; then
+            exit 0
+          fi
+          sleep 2
+        done
+        exit 1
+    - name: Exportar imagem
+      run: docker save "$IMAGE:sha-$GITHUB_SHA" -o /tmp/imagem.tar
+    - uses: actions/upload-artifact@v4
+      with:
+        name: imagem-docker
+        path: /tmp/imagem.tar
+        retention-days: 1
+        if-no-files-found: error
+    needs:
+    - testes
+  seguranca_imagem:
+    name: Trivy imagem e SBOM
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: imagem-docker
+        path: /tmp
+    - run: docker load -i /tmp/imagem.tar
+    - name: Gerar SBOM com Syft
+      uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+      with:
+        image: ghcr.io/youserz/devopspratica:sha-${{ github.sha }}
+        format: spdx-json
+        output-file: sbom.spdx.json
+        upload-artifact: false
+    - uses: actions/upload-artifact@v4
+      with:
+        name: sbom-spdx
+        path: sbom.spdx.json
+        if-no-files-found: error
+    - name: Relatório de todas as severidades
+      uses: aquasecurity/trivy-action@8f28faec26515256b6d22074d1d2a8986f4cbd87
+      with:
+        scanners: vuln
+        scan-type: image
+        image-ref: ghcr.io/youserz/devopspratica:sha-${{ github.sha }}
+        format: json
+        output: trivy-imagem.json
+        severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+        ignore-unfixed: false
+        exit-code: '0'
+    - name: Bloquear HIGH/CRITICAL com correção disponível
+      uses: aquasecurity/trivy-action@8f28faec26515256b6d22074d1d2a8986f4cbd87
+      with:
+        scanners: vuln
+        scan-type: image
+        image-ref: ghcr.io/youserz/devopspratica:sha-${{ github.sha }}
+        format: table
+        severity: HIGH,CRITICAL
+        ignore-unfixed: true
+        exit-code: '1'
+    - uses: actions/upload-artifact@v4
+      with:
+        name: trivy-imagem
+        path: trivy-imagem.json
+        if-no-files-found: error
+      if: always()
+    needs:
+    - imagem
+  publicar:
+    name: Publicar no GHCR
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: imagem-docker
+        path: /tmp
+    - run: docker load -i /tmp/imagem.tar
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - run: docker push "$IMAGE:sha-$GITHUB_SHA"
+    needs:
+    - segredos
+    - dependencias
+    - testes
+    - sonar
+    - imagem
+    - seguranca_imagem
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
-
-    steps:
-      - name: Checkout do código
-        uses: actions/checkout@v4
-
-      - name: Login no GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build da imagem Docker
-        run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:2.0 .
-
-      - name: Verificar imagem criada
-        run: |
-          docker images
-          docker inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:2.0
-
-      - name: Push da imagem para o Registry
-        run: |
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:2.0
