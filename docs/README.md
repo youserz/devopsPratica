@@ -35,7 +35,7 @@ Artifacts: `gitleaks`, `cobertura`, `trivy-dependencias`, `trivy-imagem`, `sbom-
 ## Demonstração
 
 As evidências reais e links de execuções estão em [evidencias.md](evidencias.md).
-O PR #2 da branch `demonstracao-cve` introduziu urllib3 1.26.4 no arquivo de
+O PR #3 da branch `demonstracao-seguranca` introduziu urllib3 1.26.4 no arquivo de
 dependências de desenvolvimento para demonstrar o bloqueio. CVE-2021-33503 possui correção em 1.26.5.
 O relatório e o merge bloqueado foram capturados. A versão foi corrigida para
 2.8.0 no mesmo PR, e todos os checks passaram na execução posterior.

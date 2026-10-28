@@ -6,14 +6,13 @@ Data: 27/10/2026 (America/Sao_Paulo).
 
 - [Repositório](https://github.com/youserz/devopsPratica).
 - [Workflow YAML](https://github.com/youserz/devopsPratica/blob/main/.github/workflows/ci.yml).
-- [PR de implementação #1](https://github.com/youserz/devopsPratica/pull/1), integrado após aprovação dos checks.
 - [Primeira execução](https://github.com/youserz/devopsPratica/actions/runs/40595101752).
 - [Execução da main com publicação no GHCR](https://github.com/youserz/devopsPratica/actions/runs/40595459804).
 - Projeto SonarCloud: [youserz_devopsPratica](https://sonarcloud.io/summary/new_code?id=youserz_devopsPratica).
 
 ## Bloqueio de vulnerabilidade corrigível
 
-[PR #2](https://github.com/youserz/devopsPratica/pull/2), branch `demonstracao-cve`.
+[PR #3](https://github.com/youserz/devopsPratica/pull/3), branch `demonstracao-seguranca`.
 
 A versão `urllib3==1.26.4` foi introduzida apenas nas dependências de desenvolvimento.
 A CVE-2021-33503 tem severidade HIGH e correção em 1.26.5, conforme o
@@ -21,9 +20,9 @@ A CVE-2021-33503 tem severidade HIGH e correção em 1.26.5, conforme o
 O relatório encontrou também outras vulnerabilidades HIGH nessa versão antiga.
 A correção usa 2.8.0, evitando restaurar apenas a correção mínima de uma CVE.
 
-- Commit vulnerável com scanner corrigido: `650a8f095742a2a4ad95724ca2fda120053be116`.
-- [Execução reprovada](https://github.com/youserz/devopsPratica/actions/runs/40595833798).
-- [Log Trivy](https://github.com/youserz/devopsPratica/actions/runs/40595833798/job/122511386443).
+- Commit vulnerável: `276743f6061b881e53bee8e3a59321e35a1602d0`.
+- [Execução reprovada](https://github.com/youserz/devopsPratica/actions/runs/40608578318).
+- [Log Trivy](https://github.com/youserz/devopsPratica/actions/runs/40608578318/job/122554182342).
 
 Trecho real da execução:
 
@@ -86,17 +85,16 @@ O scanner aguarda o Quality Gate e retorna falha se ele reprovar.
 
 ## Aprovação após corrigir a dependência
 
-A versão vulnerável foi restaurada para `urllib3==2.8.0` no mesmo PR.
-- Commit corrigido: `57d0902`.
-- [Execução aprovada após correção](https://github.com/youserz/devopsPratica/actions/runs/40596202621).
-- [Trivy dependências aprovado](https://github.com/youserz/devopsPratica/actions/runs/40596202621/job/122512621822).
-- [SBOM e relatórios da versão corrigida](https://github.com/youserz/devopsPratica/actions/runs/40596202621#artifacts).
+A dependência foi restaurada para `urllib3==2.8.0` no mesmo PR #3.
+As execuções e artifacts estão disponíveis na aba Checks do PR.
 
-Todos os seis checks obrigatórios passaram. O job de publicação foi ignorado por
-ser um PR, conforme a regra de publicação exclusiva de pushes na main.
+- Commit corrigido: `8c28aa5`.
+- [Execução aprovada](https://github.com/youserz/devopsPratica/actions/runs/40608680824).
+- [Trivy dependências aprovado](https://github.com/youserz/devopsPratica/actions/runs/40608680824/job/122554759762).
+- [SBOM e relatórios](https://github.com/youserz/devopsPratica/actions/runs/40608680824#artifacts).
+
+Os seis checks obrigatórios foram aprovados. A publicação foi ignorada por ser PR.
 
 ![Execução aprovada após corrigir urllib3](../evidencias/devsecops/correcao-aprovada.png)
-
-![Artifacts da execução corrigida](../evidencias/devsecops/artifacts-corrigidos.png)
 
 ![Checks obrigatórios na proteção da main](../evidencias/devsecops/protecao-main.png)
