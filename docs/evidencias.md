@@ -87,3 +87,14 @@ O scanner aguarda o Quality Gate e retorna falha se ele reprovar.
 
 A dependência foi restaurada para `urllib3==2.8.0` no mesmo PR #3.
 As execuções e artifacts estão disponíveis na aba Checks do PR.
+
+- Commit corrigido: `8c28aa5`.
+- [Execução aprovada](https://github.com/youserz/devopsPratica/actions/runs/40608680824).
+- [Trivy dependências aprovado](https://github.com/youserz/devopsPratica/actions/runs/40608680824/job/122554759762).
+- [SBOM e relatórios](https://github.com/youserz/devopsPratica/actions/runs/40608680824#artifacts).
+
+Os seis checks obrigatórios foram aprovados. A publicação foi ignorada por ser PR.
+
+![Execução aprovada após corrigir urllib3](../evidencias/devsecops/correcao-aprovada.png)
+
+![Checks obrigatórios na proteção da main](../evidencias/devsecops/protecao-main.png)
